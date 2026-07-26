@@ -53,6 +53,18 @@ path = "./lib/aws-json-protocol-2.49.3.jar"
 
 [[platform.java21.dependency]]
 groupId = "software.amazon.awssdk"
+artifactId = "sts"
+version = "2.49.3"
+path = "./lib/sts-2.49.3.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
+artifactId = "aws-query-protocol"
+version = "2.49.3"
+path = "./lib/aws-query-protocol-2.49.3.jar"
+
+[[platform.java21.dependency]]
+groupId = "software.amazon.awssdk"
 artifactId = "checksums"
 version = "2.49.3"
 path = "./lib/checksums-2.49.3.jar"
