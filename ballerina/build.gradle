@@ -61,6 +61,11 @@ dependencies {
     externalJars(group: 'software.amazon.awssdk', name: 'marketplacemetering', version: "${awsJavaSdkVersion}") {
         transitive = false
     }
+
+    // The full AWS SDK stack has to be declared here: a dependency package's platform jars are
+    // not visible to this package's `@java:Method` resolution. `sts` and `aws-query-protocol` back
+    // the web-identity leg of the default credentials provider chain, which is how EKS IAM roles
+    // for service accounts (IRSA) are resolved for `MeterUsage`/`RegisterUsage`.
     externalJars(group: 'software.amazon.awssdk', name: 'apache-client', version: "${awsJavaSdkVersion}") {
         transitive = false
     }
@@ -71,6 +76,9 @@ dependencies {
         transitive = false
     }
     externalJars(group: 'software.amazon.awssdk', name: 'aws-json-protocol', version: "${awsJavaSdkVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'software.amazon.awssdk', name: 'aws-query-protocol', version: "${awsJavaSdkVersion}") {
         transitive = false
     }
     externalJars(group: 'software.amazon.awssdk', name: 'checksums', version: "${awsJavaSdkVersion}") {
@@ -119,6 +127,9 @@ dependencies {
         transitive = false
     }
     externalJars(group: 'software.amazon.awssdk', name: 'sdk-core', version: "${awsJavaSdkVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'software.amazon.awssdk', name: 'sts', version: "${awsJavaSdkVersion}") {
         transitive = false
     }
     externalJars(group: 'software.amazon.awssdk', name: 'third-party-jackson-core', version: "${awsJavaSdkVersion}") {

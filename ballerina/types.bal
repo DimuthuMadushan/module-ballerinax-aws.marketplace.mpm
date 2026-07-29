@@ -16,70 +16,28 @@
 
 import ballerina/constraint;
 import ballerina/time;
+import ballerinax/aws;
+import ballerinax/aws.auth;
 
-# Represents the Client configurations for AWS Marketplace Metering service.
+# Represents the connection configuration for the AWS Marketplace Metering service client.
 public type ConnectionConfig record {|
-    # The AWS region with which the connector should communicate
-    Region region;
-    # The authentication configurations for the AWS Marketplace Metering service
-    AuthConfig auth;
-|};
-
-# An Amazon Web Services region that hosts a set of Amazon services.
-public enum Region {
-    AF_SOUTH_1 = "af-south-1",
-    AP_EAST_1 = "ap-east-1",
-    AP_NORTHEAST_1 = "ap-northeast-1",
-    AP_NORTHEAST_2 = "ap-northeast-2",
-    AP_NORTHEAST_3 = "ap-northeast-3",
-    AP_SOUTH_1 = "ap-south-1",
-    AP_SOUTH_2 = "ap-south-2",
-    AP_SOUTHEAST_1 = "ap-southeast-1",
-    AP_SOUTHEAST_2 = "ap-southeast-2",
-    AP_SOUTHEAST_3 = "ap-southeast-3",
-    AP_SOUTHEAST_4 = "ap-southeast-4",
-    AWS_CN_GLOBAL = "aws-cn-global",
-    AWS_GLOBAL = "aws-global",
-    AWS_ISO_GLOBAL = "aws-iso-global",
-    AWS_ISO_B_GLOBAL = "aws-iso-b-global",
-    AWS_US_GOV_GLOBAL = "aws-us-gov-global",
-    CA_WEST_1 = "ca-west-1",
-    CA_CENTRAL_1 = "ca-central-1",
-    CN_NORTH_1 = "cn-north-1",
-    CN_NORTHWEST_1 = "cn-northwest-1",
-    EU_CENTRAL_1 = "eu-central-1",
-    EU_CENTRAL_2 = "eu-central-2",
-    EU_ISOE_WEST_1 = "eu-isoe-west-1",
-    EU_NORTH_1 = "eu-north-1",
-    EU_SOUTH_1 = "eu-south-1",
-    EU_SOUTH_2 = "eu-south-2",
-    EU_WEST_1 = "eu-west-1",
-    EU_WEST_2 = "eu-west-2",
-    EU_WEST_3 = "eu-west-3",
-    IL_CENTRAL_1 = "il-central-1",
-    ME_CENTRAL_1 = "me-central-1",
-    ME_SOUTH_1 = "me-south-1",
-    SA_EAST_1 = "sa-east-1",
-    US_EAST_1 = "us-east-1",
-    US_EAST_2 = "us-east-2",
-    US_GOV_EAST_1 = "us-gov-east-1",
-    US_GOV_WEST_1 = "us-gov-west-1",
-    US_ISOB_EAST_1 = "us-isob-east-1",
-    US_ISO_EAST_1 = "us-iso-east-1",
-    US_ISO_WEST_1 = "us-iso-west-1",
-    US_WEST_1 = "us-west-1",
-    US_WEST_2 = "us-west-2"
-}
-
-# Represents the Authentication configurations for AWS Marketplace Metering service.
-public type AuthConfig record {|
-    # The AWS access key, used to identify the user interacting with AWS
-    string accessKeyId;
-    # The AWS secret access key, used to authenticate the user interacting with AWS
-    string secretAccessKey;
-    # The AWS session token, retrieved from an AWS token service, used for authenticating 
-    # a user with temporary permission to a resource
-    string sessionToken?;
+    # Authentication configuration: any standard credential source supported by
+    # AWS — static credentials, an AWS profile, STS assume-role,
+    # web identity (OIDC), IAM Identity Center (SSO), an external credential
+    # process, or the default credential provider chain.
+    #
+    # The `meterUsage` and `registerUsage` operations must be signed with the identity of the
+    # compute resource the software runs on — the Amazon EC2 instance role, the Amazon ECS task
+    # role, or EKS IAM roles for service accounts (IRSA). AWS does not accept long-term access
+    # keys for those operations, so use `auth:DEFAULT_CREDENTIALS` and let the provider chain
+    # pick up the role
+    auth:AuthConfig auth;
+    # AWS region: an `aws:Region` enum member or a plain region
+    # string (e.g., `"us-east-1"`) for regions not yet in the enum
+    aws:Region|string region;
+    # Optional endpoint options: FIPS/dualstack variants, or a custom
+    # endpoint override (e.g. LocalStack, VPC interface endpoints)
+    aws:EndpointConfig endpoint?;
 |};
 
 # Represents the result retrieved from `ResolveCustomer` operation.
@@ -107,12 +65,20 @@ public type BatchMeterUsageRequest record {|
 |};
 
 # Represents the details of the quantity of usage for a given product.
+#
+# The buyer must be identified by exactly one of `customerIdentifier` or `customerAWSAccountId`.
 public type UsageRecord record {|
-    # The unique identifier used to identify an individual customer
+    # The unique identifier used to identify an individual customer, obtained via the `ResolveCustomer` operation.
+    # Not supported for new SaaS product integrations - use `customerAWSAccountId` instead
     @constraint:String {
         pattern: re `[\s\S]{1,255}$`
     }
-    string customerIdentifier;
+    string customerIdentifier?;
+    # The AWS account ID of the buyer
+    @constraint:String {
+        pattern: re `^[0-9]{1,255}$`
+    }
+    string customerAWSAccountId?;
     # The dimension for which the usage is being reported
     @constraint:String {
         pattern: re `[\s\S]{1,255}$`
@@ -154,12 +120,12 @@ public type UsageAllocation record {|
 public type Tag record {|
     # The label that acts as the category for the specific tag values
     @constraint:String {
-        pattern: re `^[a-zA-Z0-9+ -=._:\\/@]{1,100}$`
+        pattern: re `^[a-zA-Z0-9+ -=._:/@]{1,100}$`
     }
     string 'key;
     # The descriptor within a tag category (key)
     @constraint:String {
-        pattern: re `^[a-zA-Z0-9+ -=._:\\/@]{1,256}$`
+        pattern: re `^[a-zA-Z0-9+ -=._:/@]{1,256}$`
     }
     string value;
 |};
@@ -182,7 +148,80 @@ public type UsageRecordResult record {|
     UsageRecord usageRecord?;
 |};
 
-# Represents the possible status of a `UsageRecord` 
+# Represents the parameters used for `MeterUsage` operation.
+public type MeterUsageRequest record {|
+    # The unique identifier for the Marketplace product
+    @constraint:String {
+        pattern: re `^[-a-zA-Z0-9/=:_.@]{1,255}$`
+    }
+    string productCode;
+    # The timestamp when the usage occurred (in UTC). Usage can be metered for up to six hours in the past
+    time:Utc timestamp;
+    # The dimension, defined when publishing the product, for which the usage is being reported
+    @constraint:String {
+        pattern: re `^[\s\S]{1,255}$`
+    }
+    string usageDimension;
+    # The consumption value for the hour. Defaults to `0` if not specified
+    @constraint:Int {
+        minValue: 0,
+        maxValue: 2147483647
+    }
+    int usageQuantity?;
+    # The set of usage allocations. The sum of the allocated quantities must equal `usageQuantity`,
+    # and each allocation must carry a unique set of tags
+    @constraint:Array {
+        minLength: 1,
+        maxLength: 2500
+    }
+    UsageAllocation[] usageAllocations?;
+    # A unique, case-sensitive identifier used to ensure the idempotency of the request.
+    # If not provided, AWS generates one
+    @constraint:String {
+        minLength: 1,
+        maxLength: 64
+    }
+    string clientToken?;
+    # If `true`, checks whether the required permissions are available without actually metering the usage.
+    # Defaults to `false`
+    boolean dryRun?;
+|};
+
+# Represents the result retrieved from `MeterUsage` operation.
+public type MeterUsageResponse record {|
+    # The unique identifier for this metering event
+    string meteringRecordId?;
+|};
+
+# Represents the parameters used for `RegisterUsage` operation.
+public type RegisterUsageRequest record {|
+    # The unique identifier for the Marketplace product
+    @constraint:String {
+        pattern: re `^[-a-zA-Z0-9/=:_.@]{1,255}$`
+    }
+    string productCode;
+    # The public key version provided by AWS Marketplace
+    @constraint:Int {
+        minValue: 1
+    }
+    int publicKeyVersion;
+    # An optional value which scopes the registration down to a specific running software instance,
+    # guarding against replay attacks
+    @constraint:String {
+        maxLength: 255
+    }
+    string nonce?;
+|};
+
+# Represents the result retrieved from `RegisterUsage` operation.
+public type RegisterUsageResponse record {|
+    # The JWT token which can be verified against the AWS Marketplace public key to confirm the entitlement
+    string signature?;
+    # The timestamp at which the public key version expired. Only present when the public key version has expired
+    time:Utc publicKeyRotationTimestamp?;
+|};
+
+# Represents the possible status of a `UsageRecord`
 public enum UsageRecordStatus {
     # The `UsageRecord` was accepted by the `BatchMeterUsage` operation
     SUCCESS = "Success",

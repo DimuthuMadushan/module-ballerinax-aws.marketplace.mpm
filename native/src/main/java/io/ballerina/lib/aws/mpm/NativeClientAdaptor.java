@@ -18,23 +18,26 @@
 
 package io.ballerina.lib.aws.mpm;
 
+import io.ballerina.lib.aws.EndpointConfigUtils;
+import io.ballerina.lib.aws.auth.ProviderFactory;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.marketplacemetering.MarketplaceMeteringClient;
+import software.amazon.awssdk.services.marketplacemetering.MarketplaceMeteringClientBuilder;
 import software.amazon.awssdk.services.marketplacemetering.model.BatchMeterUsageRequest;
 import software.amazon.awssdk.services.marketplacemetering.model.BatchMeterUsageResponse;
+import software.amazon.awssdk.services.marketplacemetering.model.MeterUsageRequest;
+import software.amazon.awssdk.services.marketplacemetering.model.MeterUsageResponse;
+import software.amazon.awssdk.services.marketplacemetering.model.RegisterUsageRequest;
+import software.amazon.awssdk.services.marketplacemetering.model.RegisterUsageResponse;
 import software.amazon.awssdk.services.marketplacemetering.model.ResolveCustomerRequest;
 import software.amazon.awssdk.services.marketplacemetering.model.ResolveCustomerResponse;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Representation of {@link software.amazon.awssdk.services.marketplacemetering.MarketplaceMeteringClient} with
@@ -42,6 +45,7 @@ import java.util.Objects;
  */
 public final class NativeClientAdaptor {
     private static final String NATIVE_CLIENT = "nativeClient";
+    private static final String NATIVE_CLIENT_CLOSED = "nativeClientClosed";
 
     private NativeClientAdaptor() {
     }
@@ -54,28 +58,46 @@ public final class NativeClientAdaptor {
      * @return A Ballerina `mpm:Error` if failed to initialize the native client with the provided configurations.
      */
     public static Object init(BObject bAwsMpmClient, BMap<BString, Object> configurations) {
+        // Registered before anything else so that close() always finds its guard, even if
+        // initialization fails part way through.
+        bAwsMpmClient.addNativeData(NATIVE_CLIENT_CLOSED, new AtomicBoolean(false));
+        ConnectionConfig connectionConfig = null;
         try {
-            ConnectionConfig connectionConfig = new ConnectionConfig(configurations);
-            AwsCredentials credentials = getCredentials(connectionConfig);
-            AwsCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(credentials);
-            MarketplaceMeteringClient nativeClient = MarketplaceMeteringClient.builder()
-                    .credentialsProvider(credentialsProvider)
-                    .region(connectionConfig.region()).build();
+            connectionConfig = new ConnectionConfig(configurations);
+            MarketplaceMeteringClient nativeClient = buildClient(connectionConfig);
             bAwsMpmClient.addNativeData(NATIVE_CLIENT, nativeClient);
         } catch (Exception e) {
-            String errorMsg = String.format("Error occurred while initializing the marketplace metering client: %s",
-                    e.getMessage());
+            releaseProvider(connectionConfig, e);
+            String errorMsg = "Error occurred while initializing the marketplace metering client: "
+                    + Objects.requireNonNullElse(e.getMessage(), "Unknown error");
             return CommonUtils.createError(errorMsg, e);
         }
         return null;
     }
 
-    private static AwsCredentials getCredentials(ConnectionConfig connectionConfig) {
-        if (Objects.nonNull(connectionConfig.sessionToken())) {
-            return AwsSessionCredentials.create(connectionConfig.accessKeyId(), connectionConfig.secretAccessKey(),
-                    connectionConfig.sessionToken());
-        } else {
-            return AwsBasicCredentials.create(connectionConfig.accessKeyId(), connectionConfig.secretAccessKey());
+    private static MarketplaceMeteringClient buildClient(ConnectionConfig connectionConfig) {
+        MarketplaceMeteringClientBuilder builder = MarketplaceMeteringClient.builder()
+                .region(connectionConfig.region())
+                .credentialsProvider(connectionConfig.credentialsProvider());
+        EndpointConfigUtils.applyEndpointConfig(builder, connectionConfig.endpointConfig());
+        return builder.build();
+    }
+
+    /**
+     * Releases the credentials provider built for a client that failed to initialize. The provider
+     * may hold a background refresh thread, so it would otherwise be leaked.
+     *
+     * @param connectionConfig The connection configuration, or {@code null} if it was never built.
+     * @param failure The failure that triggered the cleanup; any close failure is suppressed into it.
+     */
+    private static void releaseProvider(ConnectionConfig connectionConfig, Exception failure) {
+        if (connectionConfig == null) {
+            return;
+        }
+        try {
+            ProviderFactory.closeProvider(connectionConfig.credentialsProvider());
+        } catch (Exception closeFailure) {
+            failure.addSuppressed(closeFailure);
         }
     }
 
@@ -133,18 +155,77 @@ public final class NativeClientAdaptor {
     }
 
     /**
+     * Emits a metering record for the software running in the buyer's AWS account.
+     *
+     * @param env The Ballerina runtime environment.
+     * @param bAwsMpmClient The Ballerina AWS MPM client object.
+     * @param request The Ballerina AWS MPM `MeterUsage` request.
+     * @return A Ballerina `mpm:Error` if there was an error while processing the request or else the AWS MPM
+     *         meter-usage response.
+     */
+    public static Object meterUsage(Environment env, BObject bAwsMpmClient, BMap<BString, Object> request) {
+        MarketplaceMeteringClient nativeClient = (MarketplaceMeteringClient) bAwsMpmClient.getNativeData(NATIVE_CLIENT);
+        MeterUsageRequest nativeRequest = CommonUtils.getNativeMeterUsageRequest(request);
+        return env.yieldAndRun(() -> {
+            try {
+                MeterUsageResponse nativeResponse = nativeClient.meterUsage(nativeRequest);
+                BMap<BString, Object> bResponse = CommonUtils.getBMeterUsageResponse(nativeResponse);
+                return bResponse;
+            } catch (Exception e) {
+                String errorMsg = String.format("Error occurred while executing meter-usage operation: %s",
+                        e.getMessage());
+                BError bError = CommonUtils.createError(errorMsg, e);
+                return bError;
+            }
+        });
+    }
+
+    /**
+     * Verifies the entitlement of the buyer running a paid container product and commences metering.
+     *
+     * @param env The Ballerina runtime environment.
+     * @param bAwsMpmClient The Ballerina AWS MPM client object.
+     * @param request The Ballerina AWS MPM `RegisterUsage` request.
+     * @return A Ballerina `mpm:Error` if there was an error while processing the request or else the AWS MPM
+     *         register-usage response.
+     */
+    public static Object registerUsage(Environment env, BObject bAwsMpmClient, BMap<BString, Object> request) {
+        MarketplaceMeteringClient nativeClient = (MarketplaceMeteringClient) bAwsMpmClient.getNativeData(NATIVE_CLIENT);
+        RegisterUsageRequest nativeRequest = CommonUtils.getNativeRegisterUsageRequest(request);
+        return env.yieldAndRun(() -> {
+            try {
+                RegisterUsageResponse nativeResponse = nativeClient.registerUsage(nativeRequest);
+                BMap<BString, Object> bResponse = CommonUtils.getBRegisterUsageResponse(nativeResponse);
+                return bResponse;
+            } catch (Exception e) {
+                String errorMsg = String.format("Error occurred while executing register-usage operation: %s",
+                        e.getMessage());
+                BError bError = CommonUtils.createError(errorMsg, e);
+                return bError;
+            }
+        });
+    }
+
+    /**
      * Closes the AWS MPM client native resources.
      *
      * @param bAwsMpmClient The Ballerina AWS MPM client object.
      * @return A Ballerina `mpm:Error` if failed to close the underlying resources.
      */
     public static Object close(BObject bAwsMpmClient) {
-        MarketplaceMeteringClient nativeClient = (MarketplaceMeteringClient) bAwsMpmClient.getNativeData(NATIVE_CLIENT);
+        if (!(bAwsMpmClient.getNativeData(NATIVE_CLIENT_CLOSED) instanceof AtomicBoolean closed)
+                || !closed.compareAndSet(false, true)) {
+            return null;
+        }
+        Object client = bAwsMpmClient.getNativeData(NATIVE_CLIENT);
         try {
-            nativeClient.close();
+            if (client instanceof MarketplaceMeteringClient nativeClient) {
+                nativeClient.close();
+            }
+            bAwsMpmClient.addNativeData(NATIVE_CLIENT, null);
         } catch (Exception e) {
-            String errorMsg = String.format("Error occurred while closing the marketplace metering client: %s",
-                    e.getMessage());
+            String errorMsg = "Error occurred while closing the marketplace metering client: "
+                    + Objects.requireNonNullElse(e.getMessage(), "Unknown error");
             return CommonUtils.createError(errorMsg, e);
         }
         return null;

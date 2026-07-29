@@ -38,6 +38,7 @@ public interface Constants {
     // Constants related to MPM `UsageRecord`
     String MPM_USAGE_RECORD = "UsageRecord";
     BString MPM_USAGE_RECORD_CUSTOMER_IDFR = StringUtils.fromString("customerIdentifier");
+    BString MPM_USAGE_RECORD_CUSTOMER_AWS_ACNT_ID = StringUtils.fromString("customerAWSAccountId");
     BString MPM_USAGE_RECORD_DIMENSION = StringUtils.fromString("dimension");
     BString MPM_USAGE_RECORD_TIMESTAMP = StringUtils.fromString("timestamp");
     BString MPM_USAGE_RECORD_QUANTITY = StringUtils.fromString("quantity");
@@ -64,11 +65,31 @@ public interface Constants {
     BString MPM_USAGE_RECORD_RESULT_STATUS = StringUtils.fromString("status");
     BString MPM_USAGE_RECORD_RESULT_USAGE_RECORD = StringUtils.fromString("usageRecord");
 
-    // Constants related to MPM Error
+    // Constants related to MPM `MeterUsageRequest`
+    BString MPM_METER_USAGE_PRODUCT_CODE = StringUtils.fromString("productCode");
+    BString MPM_METER_USAGE_TIMESTAMP = StringUtils.fromString("timestamp");
+    BString MPM_METER_USAGE_DIMENSION = StringUtils.fromString("usageDimension");
+    BString MPM_METER_USAGE_QUANTITY = StringUtils.fromString("usageQuantity");
+    BString MPM_METER_USAGE_ALLOCATIONS = StringUtils.fromString("usageAllocations");
+    BString MPM_METER_USAGE_CLIENT_TOKEN = StringUtils.fromString("clientToken");
+    BString MPM_METER_USAGE_DRY_RUN = StringUtils.fromString("dryRun");
+
+    // Constants related to MPM `MeterUsageResponse`
+    String MPM_METER_USAGE_RESPONSE = "MeterUsageResponse";
+    BString MPM_METER_USAGE_RESPONSE_RECORD_ID = StringUtils.fromString("meteringRecordId");
+
+    // Constants related to MPM `RegisterUsageRequest`
+    BString MPM_REGISTER_USAGE_PRODUCT_CODE = StringUtils.fromString("productCode");
+    BString MPM_REGISTER_USAGE_PUBLIC_KEY_VERSION = StringUtils.fromString("publicKeyVersion");
+    BString MPM_REGISTER_USAGE_NONCE = StringUtils.fromString("nonce");
+
+    // Constants related to MPM `RegisterUsageResponse`
+    String MPM_REGISTER_USAGE_RESPONSE = "RegisterUsageResponse";
+    BString MPM_REGISTER_USAGE_RESPONSE_SIGNATURE = StringUtils.fromString("signature");
+    BString MPM_REGISTER_USAGE_RESPONSE_KEY_ROTATION_TS =
+            StringUtils.fromString("publicKeyRotationTimestamp");
+
+    // Constants related to MPM Error. The `ErrorDetails` record itself belongs to the shared
+    // `ballerinax/aws` module and is built by `io.ballerina.lib.aws.ErrorUtils`.
     String MPM_ERROR = "Error";
-    String MPM_ERROR_DETAILS = "ErrorDetails";
-    BString MPM_ERROR_DETAILS_HTTP_STATUS_CODE = StringUtils.fromString("httpStatusCode");
-    BString MPM_ERROR_DETAILS_HTTP_STATUS_TXT = StringUtils.fromString("httpStatusText");
-    BString MPM_ERROR_DETAILS_ERR_CODE = StringUtils.fromString("errorCode");
-    BString MPM_ERROR_DETAILS_ERR_MSG = StringUtils.fromString("errorMessage");
 }
