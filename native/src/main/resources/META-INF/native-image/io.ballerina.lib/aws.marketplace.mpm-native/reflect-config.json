@@ -1,0 +1,92 @@
+[
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.core.internal.util.ClassLoaderHelper" },
+    "name": "java.lang.Integer"
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.core.internal.util.ClassLoaderHelper" },
+    "name": "java.lang.StackTraceElement[]"
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.utils.Logger" },
+    "name": "java.lang.String[]"
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.utils.ReflectionMethodInvoker" },
+    "name": "java.lang.String",
+    "methods": [
+      { "name": "indexOf", "parameterTypes": ["java.lang.String", "int"] }
+    ]
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.http.apache.ApacheHttpClient" },
+    "name": "java.lang.String",
+    "fields": [{ "name": "serialVersionUID" }]
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.http.apache.ApacheHttpClient$ApacheConnectionManagerFactory" },
+    "name": "java.lang.reflect.Method[]"
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.http.apache.ApacheHttpClient$ApacheConnectionManagerFactory" },
+    "name": "javax.net.ssl.SSLContext"
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.http.apache.ApacheHttpClient$ApacheConnectionManagerFactory" },
+    "name": "sun.security.provider.NativePRNG"
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.http.apache.ApacheHttpClient$ApacheConnectionManagerFactory" },
+    "name": "sun.security.ssl.SSLContextImpl$TLSContext"
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.http.apache.ApacheHttpClient$ApacheConnectionManagerFactory" },
+    "name": "sun.security.ssl.TrustManagerFactoryImpl$PKIXFactory"
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.auth.credentials.internal.ProfileCredentialsUtils" },
+    "name": "software.amazon.awssdk.services.sts.internal.StsProfileCredentialsProviderFactory",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.core.internal.util.ClassLoaderHelper" },
+    "name": "software.amazon.awssdk.services.sts.internal.StsProfileCredentialsProviderFactory"
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.services.sts.endpoints.internal.DefaultPartitionDataProvider" },
+    "name": "java.lang.StackTraceElement[]"
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.checksums.internal.ConstructorCache" },
+    "name": "java.util.zip.CRC32C"
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.checksums.internal.CrcChecksumProvider" },
+    "name": "java.util.zip.CRC32C",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.checksums.internal.CrcCloneOnMarkChecksum" },
+    "name": "software.amazon.awssdk.checksums.internal.SdkCrc32CChecksum",
+    "methods": [{ "name": "clone", "parameterTypes": [] }]
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.core.interceptor.ClasspathInterceptorChainFactory" },
+    "name": "software.amazon.awssdk.core.internal.interceptor.HttpChecksumValidationInterceptor",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "condition": { "typeReachable": "software.amazon.awssdk.core.internal.util.ClassLoaderHelper" },
+    "name": "software.amazon.awssdk.core.internal.interceptor.HttpChecksumValidationInterceptor"
+  },
+  {
+    "condition": { "typeReachable": "org.apache.http.util.ExceptionUtils" },
+    "name": "java.lang.Throwable",
+    "methods": [{ "name": "initCause", "parameterTypes": ["java.lang.Throwable"] }]
+  },
+  {
+    "condition": { "typeReachable": "org.apache.http.impl.client.BasicAuthCache" },
+    "name": "org.apache.http.impl.auth.BasicScheme",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  }
+]

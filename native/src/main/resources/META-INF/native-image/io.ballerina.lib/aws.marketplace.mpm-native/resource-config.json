@@ -1,0 +1,18 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "condition": { "typeReachable": "org.apache.http.util.VersionInfo" },
+        "pattern": "\\Qorg/apache/http/version.properties\\E"
+      },
+      {
+        "condition": { "typeReachable": "org.apache.http.util.VersionInfo" },
+        "pattern": "\\Qorg/apache/http/client/version.properties\\E"
+      },
+      {
+        "condition": { "typeReachable": "org.apache.http.conn.util.PublicSuffixMatcherLoader" },
+        "pattern": "\\Qmozilla/public-suffix-list.txt\\E"
+      }
+    ]
+  }
+}

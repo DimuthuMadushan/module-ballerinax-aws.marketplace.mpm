@@ -1,0 +1,30 @@
+{
+  "types": [
+    {
+      "condition": { "typeReachable": "software.amazon.awssdk.http.apache.ApacheHttpClient" },
+      "name": "java.lang.String"
+    },
+    {
+      "condition": { "typeReachable": "org.apache.http.entity.SerializableEntity" },
+      "name": "java.lang.String"
+    },
+    {
+      "condition": { "typeReachable": "org.apache.http.entity.SerializableEntity" },
+      "name": "java.util.ArrayList"
+    },
+    {
+      "condition": { "typeReachable": "org.apache.http.impl.client.BasicAuthCache" },
+      "name": "java.util.HashMap"
+    },
+    {
+      "condition": { "typeReachable": "org.apache.http.impl.client.BasicAuthCache" },
+      "name": "org.apache.http.impl.auth.BasicScheme"
+    },
+    {
+      "condition": { "typeReachable": "org.apache.http.impl.client.BasicAuthCache" },
+      "name": "org.apache.http.impl.auth.RFC2617Scheme"
+    }
+  ],
+  "lambdaCapturingTypes": [],
+  "proxies": []
+}
